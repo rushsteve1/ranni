@@ -1,0 +1,41 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "ranni",
+      "camelcase": "Ranni",
+      "title": "Ranni",
+      "scope": "source.ranni",
+      "file-types": [
+        "rni",
+        "ranni"
+      ],
+      "injection-regex": "^ranni$",
+      "class-name": "TreeSitterRanni"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "Meta-reductive programming language",
+    "authors": [
+      {
+        "name": "Steven vanZyl",
+        "email": "rushsteve1@rushsteve1.us",
+        "url": "https://rushsteve1.us/"
+      }
+    ],
+    "links": {
+      "repository": "https://github.com/rushsteve1/ranni"
+    }
+  },
+  "bindings": {
+    "c": true,
+    "go": true,
+    "node": true,
+    "python": true,
+    "rust": true,
+    "swift": true,
+    "zig": false
+  }
+}

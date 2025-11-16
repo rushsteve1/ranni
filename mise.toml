@@ -1,0 +1,4 @@
+[tools]
+"cargo:tree-sitter-cli" = "latest"
+node = "latest"
+rust = "latest"
