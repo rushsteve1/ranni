@@ -1,7 +1,7 @@
 # Design
 
 > [!WARNING]
-> This document will churn signifigantly during development.
+> This document will churn significantly during development.
 > Check back frequently, assume nothing, ask questions!
 
 Ranni is a meta-reductive interpreted programming language designed to merge
@@ -51,6 +51,8 @@ that's used for integer division.
 1 - 2.0 #= -1.0
 (1/2) + 2.0 #= 2.5
 ```
+This also demonstrates the only form of type coercion in Ranni:
+Integers can become Ratios, and both can become Floats.
 
 The arithmetic operators are (in order of precedence)
 - Exponentiation `^`
@@ -77,7 +79,7 @@ y #= 5
 ```
 
 `let` is special for a number of reasons:
-- It is the __only__ way to bind a assign a value to a name in a scope.
+- It is the __only__ way to bind an assign a value to a name in a scope.
 	Records and Structs can have named fields, but that is part of the structure
 	not the current scope.
 - Shadowing is allowed
@@ -99,7 +101,7 @@ encounters an undefined type or value it immediately errors.
 ## Basic Compounds
 
 Ranni supports two basic compound types.
-In Ranni the `,` comma character is considered whitespace, an so is optional
+In Ranni the `,` comma character is considered whitespace, and so is optional
 in compound types.
 
 Arrays are simple sequential lists of the __same type__.
@@ -149,7 +151,7 @@ x.3 #= 4
 (1 foo = 2, 3, 4)
 ```
 When indexing a record using a variable with the same name as a field,
-wrap the right hand side of the `.` dot expression in parens.
+wrap the right-hand side of the `.` dot expression in parens.
 ```rs
 let foo = 1
 let x = (1 2, foo = 3.0)
@@ -210,7 +212,7 @@ This is also our first encounter with `$` the anonymous variable.
 In places where an argument is implicit, such as the expression in a match,
 it is assigned to the `$` dollar sign variable.
 
-Alternatively we could use the fact that `let` returns its value.
+Alternatively, we could use the fact that `let` returns its value.
 ```rs
 let x = 15
 match let y = x / 3 {
@@ -267,16 +269,39 @@ In Ranni all types are first-class. They can be assigned to variables and passed
 as arguments to and from functions. Any place that expects a type actually
 expects an *expression that evaluates to a type*.
 
-All types are of the special meta-type named... `type`.
+All type values are of the special meta-type named `Type`.
+By convention types are named in Pascal case.
 
 Since Ranni is expanding all values at compile time this allows us to construct
 concrete implementations of generic functions using a technique called
 *specialization*.
 ```rs
-let square_factory = fn(T: type) => fn (n: T) => n * n
+let square_factory = fn(T: Type) => fn (n: T) => n * n
 ```
 This is a function that takes in a type `T` and returns another function that
 takes in a value *of type `T`* and then multiplies it times itself.
+`T` is used to specialize the returned function.
+
+### Built-In Data Types
+
+Number types
+- `Byte` 8 bits
+- `Int` 64 bits
+- `Float` 64 bits
+- `Ratio` 128 bits
+
+Meta Types
+- `Type` any type value
+- `Array` any array, regardless of underlying type
+- `Record` any record, regardless of shape
+- `Struct` any struct, regardless of shape (preserves uniqueness)
+- `Func` any function, regardless of signature
+
+Compiler types
+- `Module` a code module
+- `Fiber` a running coroutine
+
+### Predicate Types
 
 ## Structs
 
@@ -326,7 +351,7 @@ match x {
 
 ## Path Values
 
-Paths are a special data type that allows for referring to places within other
+Paths are a special datatype that allows for referring to places within other
 data types. They function similarly to symbols in LISP, but can encode even
 more information.
 
@@ -353,7 +378,6 @@ interpolating using parens.
 let my_path = :.foo.bar.baz
 my_complex_type.(my_path)
 ```
-
 
 ## Pragmas
 
@@ -387,10 +411,10 @@ Ranni supports two varieties of error handling.
 First is exceptions, which immediately halt the current fiber and signal the
 parent. This is not intended to be handled by the programmer, and is reserved
 for operations from which the interpreter may not be able to recover.
-This is for divide-by-zero, referencing undefinded variables, and other fatal
+This is for divide-by-zero, referencing undefined variables, and other fatal
 error conditions.
 
-Second, and more commonly, is the monadic error handling found in languges like
+Second, and more commonly, is the monadic error handling found in languages like
 Rust using `Result` and `Option`. These types are defined in the standard
 library's `core` module that is imported by default.
 
@@ -399,9 +423,9 @@ library's `core` module that is imported by default.
 Modules are the unit of compilation for Ranni.
 Each file is a module and can import other modules.
 
-They `import` keyword takes a single arugment, a URI to the module to import.
+They `import` keyword takes a single argument, a URI to the module to import.
 If a protocol prefix is not provided it is assumed to be `file:` and relative
-to **to the current module**. Not to any workspace root or the CWD.
+to **the current module**. Not to any workspace root or the CWD.
 
 Import returns the module as a value, so in most cases you'll want to assign
 it or destructure out individual items.
@@ -416,8 +440,8 @@ let { foo } = import "other.rni"
 ```
 
 Yes a URI, we're leaving the door open for Deno-style network imports.
-Import also does not strictly import only Ranni files. Other file types could
-be supported if they can be parsed to a Ranni structure (ie JSON).
+Import also does not strictly import only Ranni files. Other filetypes could
+be supported if they can be parsed to a Ranni structure (i.e. JSON).
 
 ## Virtual Effects and Macros
 
@@ -467,7 +491,7 @@ MyStruct {
 }
 ```
 
-These effects disappear during compliation since the compiler is able to expand
+These effects disappear during compilation since the compiler is able to expand
 them fully and erase the effect.
 
 Macros are a powerful feature that should be used with care.

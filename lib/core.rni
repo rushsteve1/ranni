@@ -1,11 +1,11 @@
 let Bool = struct {
-	let case True = void
-	let case False = void
+	case True = void
+	case False = void
 }
 let true = Bool.True
 let false = Bool.False
 
-let Option = fn (T: type) => struct {
-	let case Some = T
-	let case None = void
+let Option = fn (T: Type) => struct {
+	case Some = T
+	case None = void
 }
