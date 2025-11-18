@@ -11,8 +11,8 @@ macros into one concept.
 It achieves this by evaluating the *functionally pure* parts of the source code,
 including language features like imports and type checking, into a subset of the
 language.
-It is this step, which we call "compiling" though it acts more like JavaScript
-Bundling, that allows us to combine type declarations and macros into one
+It is this step (which we call "compiling" though it acts more like JavaScript
+Bundling) that allows us to combine type declarations and macros into one
 imperative language.
 
 In Ranni you don't write just code, you write code that evaluates to other code.
@@ -43,7 +43,7 @@ that's used for integer division.
 1 + 1 #= 2
 1.0 + 2.0 #= 3.0
 
-#  ratio types are always written using division
+# Ratios are always written using division
 1 / 2 #= 1/2
 1 + (1/2) #= 3/2
 
@@ -79,10 +79,10 @@ y #= 5
 ```
 
 `let` is special for a number of reasons:
+- Shadowing is allowed
 - It is the __only__ way to bind an assign a value to a name in a scope.
 	Records and Structs can have named fields, but that is part of the structure
 	not the current scope.
-- Shadowing is allowed
 - And, most importantly, when you assign using `let` it is **immutable**.
 	Ranni does have mutability, but it is an unrelated system we'll get to later.
 	So remember: when you use `let` the value cannot be changed, only shadowed.
@@ -113,12 +113,13 @@ Elements of an array are accessed using the `.` dot operator and the index
 ```rs
 [1 2 3 4 5].2 #= 3
 
-let x = [6 7 8]
-let i = 2
-x.i #= 8
-
 # NOT allowed
 [1 1.0 2.0 1/2]
+
+let x = [6 7 8]
+let i = 2
+# Indexing with a variable requires parens
+x.(i) #= 8
 ```
 
 The other compound is Records, which can hold values of different types
@@ -149,10 +150,11 @@ x.foo #= 4
 x.3 #= 4
 
 # NOT allowed
-(1 foo = 2, 3, 4)
+(1, foo = 2, 3, 4)
 ```
-When indexing a record using a variable with the same name as a field,
-wrap the right-hand side of the `.` dot expression in parens.
+When indexing a record using a variable, wrap the right-hand side of the `.` dot
+expression in parens. This is necessary to disambiguate looking up by field.
+As we saw earlier this is also required on Arrays for consistency.
 ```rs
 let foo = 1
 let x = (1 2, foo = 3.0)
@@ -162,9 +164,10 @@ x.(foo) #= 2
 
 ## Blocks
 
-A common syntax in Ranni is a Block, which is used both to define a new lexical
-scope as well as to organize code.
+A common syntax in many language is a Block, which is used to group expressions
+and define a new lexical scope.
 There are two forms of blocks, both inspired by JavaScript.
+In any case where Ranni expects a block either syntax can be used.
 
 `=>` "Arrow" blocks expect a single expression, they're a useful shorthand in
 many places. The expression value of the block is the same as the expression.
@@ -182,8 +185,7 @@ The expression value of the whole block is the final expression.
 	3 + 4
 } #= 7
 ```
-
-In any case where Ranni expects a block either syntax can be used.
+Only Body blocks can have Pragmas.
 
 ## Control Flow
 
@@ -255,10 +257,10 @@ so we use the `recur` special variable to refer to the current function.
 This is especially nice since it means that we no longer need to bind a function
 to a name at all to do recursion.
 
-When the argument record is omitted you can use the anonymous variable
+When the arguments record is omitted you can use the anonymous variable
 to access the arguments.
 Multiple arguments can be accessed by index using `$1`, `$2`, etc. where
-`$0` is the same as just `$` (this is true for match as well).
+`$0` is the same as just `$` (this is true for `match` as well).
 ```rs
 let square = fn => $ * $
 let add = fn $0 + $1
@@ -298,6 +300,8 @@ one_two(3) #= 6
 # Or we use the overrun
 foo(1, 2, 3) #= 6
 ```
+This is both a nice bit of syntax for higher-order programming, and used for
+type inference in generic functions.
 
 ## First-Class Types
 
@@ -327,7 +331,13 @@ Number types
 - `Ratio` 128 bits
 
 Meta Types
+- `Any` a value of any type
+- `Unknown` a value of an unknown type,
+	like `Any` but more useful during type-checking
+- `Void` does not and will never hold a value, aka `()` an empty record
 - `Type` any type value
+
+Compound Types
 - `Array` any array, regardless of underlying type
 - `Record` any record, regardless of shape
 - `Struct` any struct, regardless of shape (preserves uniqueness)
@@ -343,6 +353,8 @@ Compiler types
 
 In Ranni Structs are the only form of user-defined type, combining the features
 of Structs and Enums in other languages like Rust.
+In formal terms they are Algebraic Data Types combining both Sum and Product
+types into one system.
 
 Structs are defined using the `struct` keyword followed by a block of either
 a list types, field assignments, or `case` expressions.
@@ -361,9 +373,9 @@ let Vector = struct {
 }
 ```
 
-Under the hood structs function are backed by records. So constructing an
-instance of a struct is done much like calling a function, by passing a matching
-underlying record.
+Under the hood Structs are backed by Records. So constructing an instance of a
+struct is done much like calling a function, by passing a matching underlying
+record.
 ```rs
 Pair(4, 5)
 Vector(x = 1.0, y = 0.0, z = 3.0)
@@ -377,10 +389,11 @@ let Distance = struct {
 }
 ```
 Case expressions form new sub-types, and are constructed and matched directly.
+When matching you must be exhaustive, handling all possible cases.
 ```rs
 let x = Distance.FeetAndInches(feet = 5, inches = 10)
 match x {
-	case Distance.FeetAndInches{ f, i } => i + (f * 12)
+	case Distance.FeetAndInches(f, i) => i + (f * 12)
 	case Distance.Miles(m) => m * 63_360
 }
 ```
@@ -405,11 +418,12 @@ Blah.Yada(shared = 1, other = 1.2, bar = (3, 4))
 ### Inheritance
 
 Ranni supports a limited form of single inheritance.
-
 In Java/C++ terms the default for structs is a kind of `abstract final`.
-Cases on a struct automatically form child types, and by default ONLY cases
-within the struct are child types, and you cannot construct the outer struct.
 Both of these features can be controlled with pragmas.
+
+Cases on a struct automatically form child types, and by default ONLY cases
+defined within the struct are child types, and you cannot construct the outer
+struct.
 
 First lets look at non-abstract types
 ```rs
@@ -443,7 +457,7 @@ let NonFinal = struct {
 	base: Int
 }
 
-# Not final but still abstract!
+# Still abstract!
 NonFinal(base: 5) # NOT allowed
 
 let Child = struct {
@@ -474,14 +488,15 @@ let Quad = struct {
 let Square = struct {
 	inherits Quad
 
-	# We can replace the constructor, which can access the default with Self
+	# We can replace the constructor, which can access the default ctor with Self
 	ctor = fn (Int) Self => Self(top: $, bottom: $, left: $, right: $)
 }
 
 let Parallelo = struct {
 	inherits Quad
 
-	ctor = fn (top: Int, bottom: Int, side: Int) Self => Self(top: top, bottonm: bottom, left: side, right: side)
+	ctor = fn (top: Int, bottom: Int, side: Int) Self =>
+		Self(top: top, bottom: bottom, left: side, right: side)
 }
 
 let q = Quad(top: 1, bottom: 1, left: 1, right: 1)
@@ -493,6 +508,60 @@ Inheritance like this is not considered idiomatic for Ranni,
 and is intentionally limited. But I still consider it extremely useful,
 and is a simple generalization of the ADTs that structs already provide.
 This is *similar* to GADTs, but not strictly the same.
+
+### Constructors and Destructors
+
+As we saw above Ranni structs support a special field: the constructor `ctor`.
+A `ctor` can take any arguments, but must return a value of type `Self`.
+```rs
+let File = struct {
+	# ... various fields ...
+
+	ctor = fn (path) Self {
+		# ... construct the file ...
+	}
+}
+```
+
+Ranni takes a fairly traditional garbage collection approach, but does not
+feature destructors. Instead, we can combine the `nodrop` and `dtor` pragmas.
+```rs
+let File = struct {
+	# The compiler will error if this is dropped
+	pragma nodrop = true
+
+	# ... see above ...
+}
+
+let close = fn (file: File) {
+	# The value for dtor is the type that's bein destructed
+	pragma dtor = File
+
+	# ... close the file ...
+}
+
+let x = File("/foo/bar")
+let y = File("/foo/quux")
+close(y) # Destructs y
+
+# Error: x is not destructed
+```
+
+With this approach we separate the idea of certain types being unable to safely
+drop, and destructor functions. We can even provide multiple destructors.
+
+### Booleans
+
+In Ranni booleans are not a native type, and instead are defined using structs!
+The std lib's core module defines it as...
+```rs
+let Bool = struct {
+	case True = void
+	case False = void
+}
+let true = Bool.True()
+let false = Bool.False()
+```
 
 ## Generics
 
@@ -744,8 +813,9 @@ These effects disappear during compilation since the compiler is able to expand
 them fully and erase the effect.
 
 Macros are a powerful feature that should be used with care.
+In particular Ranni macros are **not** hygienic!
 By forcing macro functions to include a virtual effect we let callers know
-that their code might be affected.
+that their code might be altered.
 
 ## Methods
 
